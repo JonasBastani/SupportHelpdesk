@@ -12,6 +12,12 @@ use Illuminate\Validation\ValidationException;
 class SupportCallService implements SupportCallServiceInterface
 {
     private const DEFAULT_STATUS = 'open';
+    private const ALLOWED_STATUS_TRANSITIONS = [
+        'open' => ['in_progress', 'closed'],
+        'in_progress' => ['resolved', 'closed'],
+        'resolved' => [],
+        'closed' => [],
+    ];
 
     public function __construct(
         private readonly SupportCallRepositoryInterface $supportCallRepository,
@@ -72,7 +78,7 @@ class SupportCallService implements SupportCallServiceInterface
     public function updateSupportCall(int $id, array $data): array
     {
         $supportCall = $this->supportCallRepository->findByIdWithResponsibleUser($id);
-        $payload = $this->buildUpdatePayload($data);
+        $payload = $this->buildUpdatePayload($supportCall, $data);
 
         return $this->mapSupportCall(
             $this->supportCallRepository->update($supportCall, $payload),
@@ -96,7 +102,7 @@ class SupportCallService implements SupportCallServiceInterface
             'title' => $data['title'],
             'description' => $data['description'],
             'priority' => $data['priority'],
-            'status' => $data['status'] ?? self::DEFAULT_STATUS,
+            'status' => self::DEFAULT_STATUS,
             'responsible_user_id' => $this->resolveResponsibleUserId($data),
             'opened_at' => now(),
         ];
@@ -106,14 +112,19 @@ class SupportCallService implements SupportCallServiceInterface
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */
-    private function buildUpdatePayload(array $data): array
+    private function buildUpdatePayload(SupportCall $supportCall, array $data): array
     {
         $payload = [];
 
-        foreach (['title', 'description', 'priority', 'status'] as $field) {
+        foreach (['title', 'description', 'priority'] as $field) {
             if (array_key_exists($field, $data)) {
                 $payload[$field] = $data[$field];
             }
+        }
+
+        if (array_key_exists('status', $data)) {
+            $this->ensureStatusTransitionIsAllowed($supportCall->status, (string) $data['status']);
+            $payload['status'] = $data['status'];
         }
 
         if (array_key_exists('responsible_user_id', $data)) {
@@ -121,6 +132,23 @@ class SupportCallService implements SupportCallServiceInterface
         }
 
         return $payload;
+    }
+
+    private function ensureStatusTransitionIsAllowed(string $currentStatus, string $nextStatus): void
+    {
+        if ($currentStatus === $nextStatus) {
+            return;
+        }
+
+        $allowedStatuses = self::ALLOWED_STATUS_TRANSITIONS[$currentStatus] ?? [];
+
+        if (in_array($nextStatus, $allowedStatuses, true)) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'status' => 'A mudanca de status informada nao e permitida.',
+        ]);
     }
 
     /**

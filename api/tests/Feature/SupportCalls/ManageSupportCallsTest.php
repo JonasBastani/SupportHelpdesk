@@ -35,6 +35,29 @@ class ManageSupportCallsTest extends TestCase
         $this->assertDatabaseHas('support_calls', [
             'title' => 'Impressora parada',
             'responsible_user_id' => $responsibleUser->id,
+            'status' => 'open',
+        ]);
+    }
+
+    public function test_it_always_creates_a_support_call_with_open_status(): void
+    {
+        $responsibleUser = User::factory()->create();
+
+        $response = $this->postJson('/api/support-calls', [
+            'title' => 'Servidor indisponivel',
+            'description' => 'O servidor de arquivos nao responde.',
+            'priority' => 'high',
+            'status' => 'resolved',
+            'responsible_user_id' => $responsibleUser->id,
+        ]);
+
+        $response
+            ->assertCreated()
+            ->assertJsonPath('data.status', 'open');
+
+        $this->assertDatabaseHas('support_calls', [
+            'title' => 'Servidor indisponivel',
+            'status' => 'open',
         ]);
     }
 
@@ -94,20 +117,18 @@ class ManageSupportCallsTest extends TestCase
             ->assertJsonPath('errors.responsible_user_id.0', 'Nao ha responsaveis disponiveis para atribuicao automatica.');
     }
 
-    public function test_it_validates_priority_status_and_responsible_user_id_on_creation(): void
+    public function test_it_validates_priority_and_responsible_user_id_on_creation(): void
     {
         $response = $this->postJson('/api/support-calls', [
             'title' => 'VPN instavel',
             'description' => 'A VPN cai a cada 10 minutos.',
             'priority' => 'urgent',
-            'status' => 'pending',
             'responsible_user_id' => 999,
         ]);
 
         $response
             ->assertStatus(422)
             ->assertJsonPath('errors.priority.0', 'A prioridade informada e invalida.')
-            ->assertJsonPath('errors.status.0', 'O status informado e invalido.')
             ->assertJsonPath('errors.responsible_user_id.0', 'O responsavel informado nao existe.');
     }
 
@@ -151,20 +172,41 @@ class ManageSupportCallsTest extends TestCase
         ]);
 
         $response = $this->putJson("/api/support-calls/{$supportCall->id}", [
-            'status' => 'resolved',
+            'status' => 'in_progress',
             'priority' => 'low',
         ]);
 
         $response
             ->assertOk()
             ->assertJsonPath('message', 'Chamado atualizado com sucesso.')
-            ->assertJsonPath('data.status', 'resolved')
+            ->assertJsonPath('data.status', 'in_progress')
             ->assertJsonPath('data.priority', 'low');
 
         $this->assertDatabaseHas('support_calls', [
             'id' => $supportCall->id,
-            'status' => 'resolved',
+            'status' => 'in_progress',
             'priority' => 'low',
+        ]);
+    }
+
+    public function test_it_rejects_an_invalid_status_transition_when_authenticated(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        $supportCall = SupportCall::factory()->create([
+            'status' => 'open',
+        ]);
+
+        $response = $this->putJson("/api/support-calls/{$supportCall->id}", [
+            'status' => 'resolved',
+        ]);
+
+        $response
+            ->assertStatus(422)
+            ->assertJsonPath('errors.status.0', 'A mudanca de status informada nao e permitida.');
+
+        $this->assertDatabaseHas('support_calls', [
+            'id' => $supportCall->id,
+            'status' => 'open',
         ]);
     }
 

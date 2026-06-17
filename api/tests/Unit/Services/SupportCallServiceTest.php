@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Repositories\Contracts\SupportCallRepositoryInterface;
 use App\Services\SupportCallService;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use Mockery;
 use Mockery\MockInterface;
 use Tests\TestCase;
@@ -67,6 +68,65 @@ class SupportCallServiceTest extends TestCase
         ]);
 
         $this->assertSame(5, $result['responsible_user']['id']);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_it_always_creates_a_support_call_with_open_status(): void
+    {
+        Carbon::setTestNow('2026-06-17 12:00:00');
+
+        $responsibleUser = (new User([
+            'name' => 'Ana Souza',
+            'email' => 'ana.souza@example.com',
+        ]))->forceFill([
+            'id' => 5,
+        ]);
+
+        $createdSupportCall = (new SupportCall([
+            'title' => 'Rede indisponivel',
+            'description' => 'Sem acesso a internet.',
+            'priority' => 'high',
+            'status' => 'open',
+            'responsible_user_id' => 5,
+            'opened_at' => Carbon::now(),
+        ]))->forceFill([
+            'id' => 12,
+            'created_at' => Carbon::now(),
+            'updated_at' => Carbon::now(),
+        ]);
+        $createdSupportCall->setRelation('responsibleUser', $responsibleUser);
+
+        $repository = Mockery::mock(SupportCallRepositoryInterface::class, function (MockInterface $mock) use ($createdSupportCall): void {
+            $mock->shouldReceive('create')
+                ->once()
+                ->with([
+                    'title' => 'Rede indisponivel',
+                    'description' => 'Sem acesso a internet.',
+                    'priority' => 'high',
+                    'status' => 'open',
+                    'responsible_user_id' => 5,
+                    'opened_at' => Carbon::now(),
+                ])
+                ->andReturn($createdSupportCall);
+
+            $mock->shouldReceive('findByIdWithResponsibleUser')
+                ->once()
+                ->with(12)
+                ->andReturn($createdSupportCall);
+        });
+
+        $service = new SupportCallService($repository);
+
+        $result = $service->createSupportCall([
+            'title' => 'Rede indisponivel',
+            'description' => 'Sem acesso a internet.',
+            'priority' => 'high',
+            'status' => 'resolved',
+            'responsible_user_id' => 5,
+        ]);
+
+        $this->assertSame('open', $result['status']);
 
         Carbon::setTestNow();
     }
@@ -173,6 +233,160 @@ class SupportCallServiceTest extends TestCase
             'email' => 'carlos.lima@example.com',
         ], $result['responsible_user']);
         $this->assertArrayNotHasKey('password', $result['responsible_user']);
+    }
+
+    public function test_it_allows_transition_from_open_to_in_progress(): void
+    {
+        $supportCall = $this->makeSupportCallWithStatus('open');
+        $updatedSupportCall = $this->makeSupportCallWithStatus('in_progress');
+
+        $repository = Mockery::mock(SupportCallRepositoryInterface::class, function (MockInterface $mock) use ($supportCall, $updatedSupportCall): void {
+            $mock->shouldReceive('findByIdWithResponsibleUser')
+                ->once()
+                ->with(30)
+                ->andReturn($supportCall);
+
+            $mock->shouldReceive('update')
+                ->once()
+                ->with($supportCall, ['status' => 'in_progress'])
+                ->andReturn($updatedSupportCall);
+        });
+
+        $service = new SupportCallService($repository);
+
+        $result = $service->updateSupportCall(30, ['status' => 'in_progress']);
+
+        $this->assertSame('in_progress', $result['status']);
+    }
+
+    public function test_it_allows_transition_from_open_to_closed(): void
+    {
+        $supportCall = $this->makeSupportCallWithStatus('open');
+        $updatedSupportCall = $this->makeSupportCallWithStatus('closed');
+
+        $repository = Mockery::mock(SupportCallRepositoryInterface::class, function (MockInterface $mock) use ($supportCall, $updatedSupportCall): void {
+            $mock->shouldReceive('findByIdWithResponsibleUser')
+                ->once()
+                ->with(30)
+                ->andReturn($supportCall);
+
+            $mock->shouldReceive('update')
+                ->once()
+                ->with($supportCall, ['status' => 'closed'])
+                ->andReturn($updatedSupportCall);
+        });
+
+        $service = new SupportCallService($repository);
+
+        $result = $service->updateSupportCall(30, ['status' => 'closed']);
+
+        $this->assertSame('closed', $result['status']);
+    }
+
+    public function test_it_allows_transition_from_in_progress_to_resolved(): void
+    {
+        $supportCall = $this->makeSupportCallWithStatus('in_progress');
+        $updatedSupportCall = $this->makeSupportCallWithStatus('resolved');
+
+        $repository = Mockery::mock(SupportCallRepositoryInterface::class, function (MockInterface $mock) use ($supportCall, $updatedSupportCall): void {
+            $mock->shouldReceive('findByIdWithResponsibleUser')
+                ->once()
+                ->with(30)
+                ->andReturn($supportCall);
+
+            $mock->shouldReceive('update')
+                ->once()
+                ->with($supportCall, ['status' => 'resolved'])
+                ->andReturn($updatedSupportCall);
+        });
+
+        $service = new SupportCallService($repository);
+
+        $result = $service->updateSupportCall(30, ['status' => 'resolved']);
+
+        $this->assertSame('resolved', $result['status']);
+    }
+
+    public function test_it_allows_transition_from_in_progress_to_closed(): void
+    {
+        $supportCall = $this->makeSupportCallWithStatus('in_progress');
+        $updatedSupportCall = $this->makeSupportCallWithStatus('closed');
+
+        $repository = Mockery::mock(SupportCallRepositoryInterface::class, function (MockInterface $mock) use ($supportCall, $updatedSupportCall): void {
+            $mock->shouldReceive('findByIdWithResponsibleUser')
+                ->once()
+                ->with(30)
+                ->andReturn($supportCall);
+
+            $mock->shouldReceive('update')
+                ->once()
+                ->with($supportCall, ['status' => 'closed'])
+                ->andReturn($updatedSupportCall);
+        });
+
+        $service = new SupportCallService($repository);
+
+        $result = $service->updateSupportCall(30, ['status' => 'closed']);
+
+        $this->assertSame('closed', $result['status']);
+    }
+
+    public function test_it_rejects_invalid_status_transitions(): void
+    {
+        $repository = Mockery::mock(SupportCallRepositoryInterface::class);
+        $service = new SupportCallService($repository);
+
+        $invalidTransitions = [
+            ['current' => 'open', 'next' => 'resolved'],
+            ['current' => 'in_progress', 'next' => 'open'],
+            ['current' => 'resolved', 'next' => 'closed'],
+            ['current' => 'closed', 'next' => 'open'],
+        ];
+
+        foreach ($invalidTransitions as $index => $transition) {
+            $supportCall = $this->makeSupportCallWithStatus($transition['current'], 40 + $index);
+
+            $repository->shouldReceive('findByIdWithResponsibleUser')
+                ->once()
+                ->with(40 + $index)
+                ->andReturn($supportCall);
+
+            try {
+                $service->updateSupportCall(40 + $index, ['status' => $transition['next']]);
+                $this->fail('Expected invalid status transition to throw validation exception.');
+            } catch (ValidationException $exception) {
+                $this->assertSame(
+                    ['A mudanca de status informada nao e permitida.'],
+                    $exception->errors()['status'] ?? [],
+                );
+            }
+        }
+    }
+
+    private function makeSupportCallWithStatus(string $status, int $id = 30): SupportCall
+    {
+        $responsibleUser = (new User([
+            'name' => 'Carlos Lima',
+            'email' => 'carlos.lima@example.com',
+        ]))->forceFill([
+            'id' => 9,
+        ]);
+
+        $supportCall = (new SupportCall([
+            'title' => 'Telefone mudo',
+            'description' => 'Nao realiza chamadas.',
+            'priority' => 'low',
+            'status' => $status,
+            'opened_at' => Carbon::parse('2026-06-17 08:00:00'),
+        ]))->forceFill([
+            'id' => $id,
+            'responsible_user_id' => 9,
+            'created_at' => Carbon::parse('2026-06-17 08:00:00'),
+            'updated_at' => Carbon::parse('2026-06-17 09:00:00'),
+        ]);
+        $supportCall->setRelation('responsibleUser', $responsibleUser);
+
+        return $supportCall;
     }
 
     protected function tearDown(): void

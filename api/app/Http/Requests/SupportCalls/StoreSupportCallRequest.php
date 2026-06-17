@@ -20,7 +20,6 @@ class StoreSupportCallRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string'],
             'priority' => ['required', 'in:low,medium,high'],
-            'status' => ['sometimes', 'string', 'in:open,in_progress,resolved,closed'],
             'responsible_user_id' => ['nullable', 'integer', 'exists:users,id'],
         ];
     }
@@ -36,7 +35,6 @@ class StoreSupportCallRequest extends FormRequest
             'description.required' => 'A descricao e obrigatoria.',
             'priority.required' => 'A prioridade e obrigatoria.',
             'priority.in' => 'A prioridade informada e invalida.',
-            'status.in' => 'O status informado e invalido.',
             'responsible_user_id.integer' => 'O responsavel informado e invalido.',
             'responsible_user_id.exists' => 'O responsavel informado nao existe.',
         ];
