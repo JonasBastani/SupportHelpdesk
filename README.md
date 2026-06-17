@@ -47,6 +47,8 @@ Start the environment. The API container runs migrations and seeders automatical
 
 ```bash
 docker compose up --build
+docker compose exec api php artisan migrate
+docker compose exec api php artisan db:seed
 ```
 
 Default responsible users:
