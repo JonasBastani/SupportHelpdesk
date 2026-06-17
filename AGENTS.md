@@ -43,6 +43,7 @@ The API must be built in Laravel 13 and located in `api/`.
 ### Authentication
 
 - Use Laravel Sanctum for authentication.
+- At this stage, every authenticated user in the API represents a responsible attendant for support calls unless a future requirement introduces explicit roles.
 
 ### Architecture
 

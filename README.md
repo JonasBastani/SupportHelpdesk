@@ -32,6 +32,38 @@ Password: helpdesk
 Root password: root
 ```
 
+## Authentication API
+
+The API now exposes Sanctum-based authentication for responsible attendants using `email` and `password`.
+
+Endpoints:
+
+- `POST /api/register`
+- `POST /api/login`
+- `GET /api/me`
+- `POST /api/logout`
+
+Start the environment and seed the default users:
+
+```bash
+docker compose up --build
+docker compose exec api php artisan db:seed
+```
+
+Default responsible users:
+
+- `ana.souza@example.com`
+- `bruno.lima@example.com`
+- `carla.mendes@example.com`
+- `diego.santos@example.com`
+- `fernanda.rocha@example.com`
+
+Default development password for all seeded users:
+
+```text
+Password123!
+```
+
 ## Project Structure
 
 ```text
