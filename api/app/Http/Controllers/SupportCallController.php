@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\SupportCalls\IndexSupportCallRequest;
 use App\Http\Requests\SupportCalls\StoreSupportCallRequest;
 use App\Http\Requests\SupportCalls\UpdateSupportCallRequest;
 use App\Models\SupportCall;
 use App\Services\Contracts\SupportCallServiceInterface;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class SupportCallController extends Controller
 {
@@ -16,10 +16,10 @@ class SupportCallController extends Controller
     ) {
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(IndexSupportCallRequest $request): JsonResponse
     {
         return response()->json(
-            $this->supportCallService->listSupportCalls($request->query()),
+            $this->supportCallService->listSupportCalls($request->validated()),
         );
     }
 

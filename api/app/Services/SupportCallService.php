@@ -37,8 +37,16 @@ class SupportCallService implements SupportCallServiceInterface
         );
         $sortDirection = ListQueryHelper::normalizeSortDirection($filters['sort_direction'] ?? null);
         $perPage = ListQueryHelper::normalizePerPage($filters['per_page'] ?? null);
+        $status = $filters['status'] ?? null;
+        $priority = $filters['priority'] ?? null;
 
-        $paginator = $this->supportCallRepository->paginateWithResponsibleUser($sortBy, $sortDirection, $perPage);
+        $paginator = $this->supportCallRepository->paginateWithResponsibleUser(
+            $sortBy,
+            $sortDirection,
+            $perPage,
+            $status,
+            $priority,
+        );
         $paginator->through(fn (SupportCall $supportCall): array => $this->mapSupportCall($supportCall));
 
         /** @var array<string, mixed> $payload */

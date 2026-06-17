@@ -22,7 +22,13 @@ interface SupportCallRepositoryInterface
 
     public function delete(SupportCall $supportCall): void;
 
-    public function paginateWithResponsibleUser(string $sortBy, string $sortDirection, int $perPage): LengthAwarePaginator;
+    public function paginateWithResponsibleUser(
+        string $sortBy,
+        string $sortDirection,
+        int $perPage,
+        ?string $status,
+        ?string $priority,
+    ): LengthAwarePaginator;
 
     public function findUserWithFewestSupportCalls(): ?User;
 }

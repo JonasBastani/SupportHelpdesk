@@ -6,6 +6,7 @@ use App\Models\SupportCall;
 use App\Models\User;
 use App\Repositories\Contracts\SupportCallRepositoryInterface;
 use App\Services\SupportCallService;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 use Mockery;
@@ -14,6 +15,31 @@ use Tests\TestCase;
 
 class SupportCallServiceTest extends TestCase
 {
+    public function test_it_passes_list_filters_to_the_repository(): void
+    {
+        $supportCall = $this->makeSupportCallWithStatus('open');
+        $paginator = new LengthAwarePaginator(collect([$supportCall]), 1, 25);
+
+        $repository = Mockery::mock(SupportCallRepositoryInterface::class, function (MockInterface $mock) use ($paginator): void {
+            $mock->shouldReceive('paginateWithResponsibleUser')
+                ->once()
+                ->with('status', 'asc', 25, 'open', 'high')
+                ->andReturn($paginator);
+        });
+
+        $service = new SupportCallService($repository);
+
+        $result = $service->listSupportCalls([
+            'sort_by' => 'status',
+            'sort_direction' => 'asc',
+            'per_page' => '25',
+            'status' => 'open',
+            'priority' => 'high',
+        ]);
+
+        $this->assertSame(30, $result['data'][0]['id']);
+    }
+
     public function test_it_uses_the_provided_responsible_user_when_creating_a_support_call(): void
     {
         Carbon::setTestNow('2026-06-17 12:00:00');

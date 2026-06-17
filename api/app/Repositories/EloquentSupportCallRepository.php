@@ -40,9 +40,23 @@ class EloquentSupportCallRepository implements SupportCallRepositoryInterface
         $supportCall->delete();
     }
 
-    public function paginateWithResponsibleUser(string $sortBy, string $sortDirection, int $perPage): LengthAwarePaginator
+    public function paginateWithResponsibleUser(
+        string $sortBy,
+        string $sortDirection,
+        int $perPage,
+        ?string $status,
+        ?string $priority,
+    ): LengthAwarePaginator
     {
         $query = SupportCall::query()->with('responsibleUser');
+
+        if ($status !== null) {
+            $query->where('status', $status);
+        }
+
+        if ($priority !== null) {
+            $query->where('priority', $priority);
+        }
 
         if ($sortBy === 'status') {
             $query->orderByRaw("CAST(status AS CHAR) {$sortDirection}");
