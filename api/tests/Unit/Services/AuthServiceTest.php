@@ -43,7 +43,7 @@ class AuthServiceTest extends TestCase
             'password' => 'Password123!',
         ]);
 
-        $this->assertSame('ana.souza@example.com', $result['user']->email);
+        $this->assertSame('ana.souza@example.com', $result['user']['email']);
         $this->assertIsString($result['token']);
     }
 

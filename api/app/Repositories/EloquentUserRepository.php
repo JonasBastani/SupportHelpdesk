@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Models\User;
 use App\Repositories\Contracts\UserRepositoryInterface;
+use Illuminate\Support\Collection;
 
 class EloquentUserRepository implements UserRepositoryInterface
 {
@@ -20,5 +21,16 @@ class EloquentUserRepository implements UserRepositoryInterface
         return User::query()
             ->where('email', $email)
             ->first();
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function getAllOrderedByName(): Collection
+    {
+        return User::query()
+            ->orderBy('name')
+            ->orderBy('id')
+            ->get();
     }
 }

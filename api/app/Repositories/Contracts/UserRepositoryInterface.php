@@ -3,6 +3,7 @@
 namespace App\Repositories\Contracts;
 
 use App\Models\User;
+use Illuminate\Support\Collection;
 
 interface UserRepositoryInterface
 {
@@ -12,4 +13,9 @@ interface UserRepositoryInterface
     public function create(array $data): User;
 
     public function findByEmail(string $email): ?User;
+
+    /**
+     * @return Collection<int, User>
+     */
+    public function getAllOrderedByName(): Collection;
 }
