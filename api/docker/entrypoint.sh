@@ -16,6 +16,8 @@ if ! grep -q '^APP_KEY=base64:' .env; then
     php artisan key:generate --force
 fi
 
+php artisan migrate --force
+php artisan db:seed --force
 php artisan optimize:clear
 php artisan config:cache
 php artisan route:cache
