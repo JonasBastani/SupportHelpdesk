@@ -17,5 +17,6 @@ if ! grep -q '^APP_KEY=base64:' .env; then
 fi
 
 php artisan migrate --force
+php artisan db:seed --force
 
 exec apache2-foreground

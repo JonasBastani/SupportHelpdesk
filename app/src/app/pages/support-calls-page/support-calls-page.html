@@ -1,0 +1,172 @@
+<section class="page-grid" aria-labelledby="page-title">
+  <div class="intro-panel">
+    <p class="eyebrow">Central de atendimento</p>
+    <h1 id="page-title">Chamados de suporte</h1>
+    <p>
+      Cadastre solicitações, acompanhe a fila e filtre os chamados por prioridade
+      ou status.
+    </p>
+  </div>
+
+  <form class="form-panel" [formGroup]="createForm" (ngSubmit)="submitCreateForm()">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">Novo chamado</p>
+        <h2>Cadastro</h2>
+      </div>
+      <span class="status-chip status-open">Aberto</span>
+    </div>
+
+    <label>
+      <span>Titulo</span>
+      <input type="text" formControlName="title" placeholder="Ex.: Impressora parada" />
+    </label>
+
+    <label>
+      <span>Descricao</span>
+      <textarea formControlName="description" rows="5" placeholder="Descreva o problema com detalhes"></textarea>
+    </label>
+
+    <div class="form-row">
+      <label>
+        <span>Prioridade</span>
+        <select formControlName="priority">
+          <option value="low">Baixa</option>
+          <option value="medium">Media</option>
+          <option value="high">Alta</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Responsavel</span>
+        <select formControlName="responsible_user_id">
+          <option value="">Distribuicao automatica</option>
+          @for (user of users(); track user.id) {
+            <option [value]="user.id">{{ user.name }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <p class="field-hint">
+      Se nenhum responsavel for escolhido, o sistema atribui automaticamente ao
+      usuario com menos chamados.
+    </p>
+
+    <button class="primary-action" type="submit" [disabled]="creating()">
+      {{ creating() ? 'Cadastrando...' : 'Cadastrar chamado' }}
+    </button>
+  </form>
+</section>
+
+@if (feedbackMessage() !== null) {
+  <p class="feedback success" role="status">{{ feedbackMessage() }}</p>
+}
+
+@if (errorMessage() !== null) {
+  <p class="feedback error" role="alert">{{ errorMessage() }}</p>
+}
+
+<section class="list-section" aria-labelledby="list-title">
+  <div class="list-toolbar">
+    <div>
+      <p class="eyebrow">Fila atual</p>
+      <h2 id="list-title">Listagem</h2>
+    </div>
+
+    <form class="filters" [formGroup]="filtersForm" (ngSubmit)="applyFilters()">
+      <label>
+        <span>Status</span>
+        <select formControlName="status">
+          <option value="">Todos</option>
+          <option value="open">Aberto</option>
+          <option value="in_progress">Em andamento</option>
+          <option value="resolved">Resolvido</option>
+          <option value="closed">Fechado</option>
+        </select>
+      </label>
+
+      <label>
+        <span>Prioridade</span>
+        <select formControlName="priority">
+          <option value="">Todas</option>
+          <option value="low">Baixa</option>
+          <option value="medium">Media</option>
+          <option value="high">Alta</option>
+        </select>
+      </label>
+
+      <button class="secondary-action" type="submit">Filtrar</button>
+      <button class="ghost-action" type="button" (click)="clearFilters()">Limpar</button>
+    </form>
+  </div>
+
+  <div class="sort-row">
+    <button class="secondary-action" type="button" (click)="toggleSortDirection()">
+      Data de abertura: {{ sortDirection() === 'asc' ? 'mais antigas' : 'mais recentes' }}
+    </button>
+    <span>{{ visibleRange() }}</span>
+  </div>
+
+  @if (loading()) {
+    <div class="empty-state">Carregando chamados...</div>
+  } @else if (supportCalls().length === 0) {
+    <div class="empty-state">Nenhum chamado encontrado.</div>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Titulo</th>
+            <th>Prioridade</th>
+            <th>Status</th>
+            <th>Responsavel</th>
+            <th>Abertura</th>
+            @if (isAuthenticated()) {
+              <th>Acoes</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (supportCall of supportCalls(); track supportCall.id) {
+            <tr>
+              <td>
+                <strong>{{ supportCall.title }}</strong>
+                <span>{{ supportCall.description }}</span>
+              </td>
+              <td>{{ priorityLabel(supportCall.priority) }}</td>
+              <td>
+                <span class="status-chip status-{{ supportCall.status }}">
+                  {{ statusLabel(supportCall.status) }}
+                </span>
+              </td>
+              <td>{{ supportCall.responsible_user?.name ?? 'Atribuicao automatica' }}</td>
+              <td>{{ formatDate(supportCall.opened_at ?? supportCall.created_at) }}</td>
+              @if (isAuthenticated()) {
+                <td>
+                  <a class="table-link" [routerLink]="['/chamados', supportCall.id]">Visualizar</a>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <nav class="pagination" aria-label="Paginacao de chamados">
+    <button class="ghost-action" type="button" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">
+      Anterior
+    </button>
+    <span>Pagina {{ currentPage() }} de {{ lastPage() }}</span>
+    <button class="ghost-action" type="button" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === lastPage()">
+      Proxima
+    </button>
+  </nav>
+
+  @if (!isAuthenticated()) {
+    <p class="login-note">
+      Faca login para visualizar detalhes, editar, excluir ou avancar o status dos chamados.
+    </p>
+  }
+</section>

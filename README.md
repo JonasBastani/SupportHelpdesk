@@ -43,11 +43,10 @@ Endpoints:
 - `GET /api/me`
 - `POST /api/logout`
 
-Start the environment and seed the default users:
+Start the environment. The API container runs migrations and seeders automatically:
 
 ```bash
 docker compose up --build
-docker compose exec api php artisan db:seed
 ```
 
 Default responsible users:

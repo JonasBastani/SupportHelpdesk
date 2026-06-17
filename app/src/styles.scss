@@ -1,1 +1,77 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  color-scheme: light;
+  --background: #eef1f4;
+  --surface: #ffffff;
+  --surface-strong: #f5f7f9;
+  --field: #ffffff;
+  --text: #172026;
+  --muted: #63717d;
+  --border: #d7dee5;
+  --accent: #0f766e;
+  --accent-contrast: #ffffff;
+  --success: #16803a;
+  --danger: #b42318;
+  --warning: #9a5b00;
+  --info: #2166a5;
+  --shadow: 0 18px 45px rgb(20 32 41 / 8%);
+  font-family: Aptos, "Segoe UI", sans-serif;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, transparent), transparent 34rem),
+    var(--background);
+  color: var(--text);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #10161a;
+  --surface: #172027;
+  --surface-strong: #202b33;
+  --field: #111a20;
+  --text: #edf2f5;
+  --muted: #a7b3bd;
+  --border: #33424d;
+  --accent: #2dd4bf;
+  --accent-contrast: #06201c;
+  --success: #6ee7a8;
+  --danger: #ff8a80;
+  --warning: #f8c76b;
+  --info: #8cc8ff;
+  --shadow: 0 18px 45px rgb(0 0 0 / 22%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--accent) 12%, transparent), transparent 28rem),
+    linear-gradient(180deg, transparent, color-mix(in srgb, var(--surface-strong) 38%, transparent)),
+    var(--background);
+  color: var(--text);
+  font-family: Aptos, "Segoe UI", sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  outline-offset: 2px;
+}

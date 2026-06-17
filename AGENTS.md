@@ -110,6 +110,7 @@ The frontend must be built in Angular 22 and located in `app/`.
 
 - The project must use Dockerfiles and Docker Compose.
 - The API and frontend must be runnable quickly and easily with a single Docker Compose command.
+- Running Docker Compose must automatically run the API database migrations and seeders.
 - The root `README.md` must describe the project and include all required setup and run steps.
 
 ## Documentation Expectations
